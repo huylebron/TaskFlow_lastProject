@@ -1,0 +1,6 @@
+.idea
+
+
+!/TaskFlow_BE/node_modules/
+!/TaskFlow_FE/node_modules/
+!/TaskFlow_BE/.env

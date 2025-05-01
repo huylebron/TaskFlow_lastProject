@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A6FFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7A56D4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <g>
+    <rect x="10" y="10" width="80" height="80" rx="12" fill="url(#gradient)" />
+    <g transform="translate(20, 25)" fill="white">
+      <!-- Task lines -->
+      <rect x="0" y="0" width="40" height="6" rx="3" />
+      <rect x="46" y="0" width="14" height="6" rx="3" />
+      
+      <rect x="0" y="16" width="30" height="6" rx="3" />
+      <rect x="36" y="16" width="24" height="6" rx="3" />
+      
+      <rect x="0" y="32" width="20" height="6" rx="3" />
+      <rect x="26" y="32" width="34" height="6" rx="3" />
+      
+      <rect x="0" y="48" width="60" height="6" rx="3" />
+    </g>
+  </g>
+</svg> 

@@ -160,11 +160,16 @@ function Column({ column }) {
         sx={{
           minWidth: '300px',
           maxWidth: '300px',
-          bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#333643' : '#ebecf0'),
+          bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#383B47' : '#f0f2f5'),
           ml: 2,
-          borderRadius: '6px',
+          borderRadius: '8px',
           height: 'fit-content',
-          maxHeight: (theme) => `calc(${theme.trello.boardContentHeight} - ${theme.spacing(5)})`
+          maxHeight: (theme) => `calc(${theme.trello.boardContentHeight} - ${theme.spacing(5)})`,
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+          '&:hover': {
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+          },
+          transition: 'all 0.2s ease',
         }}
       >
         {/* Box Column Header */}
@@ -173,18 +178,45 @@ function Column({ column }) {
           p: 2,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          borderTopLeftRadius: '8px',
+          borderTopRightRadius: '8px',
+          borderBottom: (theme) => `1px solid ${theme.palette.mode === 'dark' ? '#4a5568' : '#e0e3e7'}`
         }}>
           <ToggleFocusInput
             value={column?.title}
             onChangedValue={onUpdateColumnTitle}
             data-no-dnd="true"
+            inputProps={{
+              sx: {
+                fontWeight: '600',
+                fontSize: '0.95rem',
+                fontFamily: 'Roboto, sans-serif',
+                letterSpacing: '0.01em',
+                '&.MuiInputBase-input': {
+                  p: '6px 10px',
+                  borderRadius: '4px'
+                },
+                '&:hover': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'
+                },
+                '&:focus': {
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+                }
+              }
+            }}
           />
 
           <Box>
             <Tooltip title="More options">
               <ExpandMoreIcon
-                sx={{ color: 'text.primary', cursor: 'pointer' }}
+                sx={{ 
+                  color: 'text.primary', 
+                  cursor: 'pointer',
+                  '&:hover': {
+                    color: 'primary.main'
+                  }
+                }}
                 id="basic-column-dropdown"
                 aria-controls={open ? 'basic-menu-column-dropdown' : undefined}
                 aria-haspopup="true"
@@ -262,16 +294,37 @@ function Column({ column }) {
               alignItems: 'center',
               justifyContent: 'space-between'
             }}>
-              <Button startIcon={<AddCardIcon />} onClick={toggleOpenNewCardForm}>Add new card</Button>
+              <Button 
+                startIcon={<AddCardIcon />} 
+                onClick={toggleOpenNewCardForm}
+                sx={{
+                  color: 'text.secondary',
+                  bgcolor: 'transparent',
+                  '&:hover': { 
+                    bgcolor: (theme) => theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.1)' 
+                      : 'rgba(0, 0, 0, 0.05)',
+                    color: 'primary.main'
+                  },
+                  textTransform: 'none',
+                  fontSize: '0.9rem'
+                }}
+              >
+                Add new card
+              </Button>
               <Tooltip title="Drag to move">
-                <DragHandleIcon sx={{ cursor: 'pointer' }} />
+                <DragHandleIcon sx={{ 
+                  cursor: 'pointer',
+                  color: 'text.secondary',
+                  '&:hover': { color: 'primary.main' }
+                }} />
               </Tooltip>
             </Box>
             : <Box sx={{
               height: '100%',
               display: 'flex',
-              alignItems: 'center',
-              gap: 1
+              flexDirection: 'column',
+              gap: 1.5
             }}>
               <TextField
                 label="Enter card title..."
@@ -279,20 +332,32 @@ function Column({ column }) {
                 size="small"
                 variant="outlined"
                 autoFocus
+                multiline
+                maxRows={3}
                 data-no-dnd="true"
                 value={newCardTitle}
                 onChange={(e) => setNewCardTitle(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    addNewCard()
+                  }
+                }}
                 sx={{
-                  '& label': { color: 'text.primary' },
+                  '& label': { color: 'text.secondary' },
                   '& input': {
-                    color: (theme) => theme.palette.primary.main,
-                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#333643' : 'white')
+                    color: 'text.primary',
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.1)' : 'white')
                   },
-                  '& label.Mui-focused': { color: (theme) => theme.palette.primary.main },
+                  '& textarea': {
+                    color: 'text.primary',
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.1)' : 'white')
+                  },
+                  '& label.Mui-focused': { color: 'primary.main' },
                   '& .MuiOutlinedInput-root': {
-                    '& fieldset': { borderColor: (theme) => theme.palette.primary.main },
-                    '&:hover fieldset': { borderColor: (theme) => theme.palette.primary.main },
-                    '&.Mui-focused fieldset': { borderColor: (theme) => theme.palette.primary.main }
+                    '& fieldset': { borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' },
+                    '&:hover fieldset': { borderColor: 'primary.main' },
+                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
                   },
                   '& .MuiOutlinedInput-input': {
                     borderRadius: 1
@@ -303,19 +368,32 @@ function Column({ column }) {
                 <Button
                   className="interceptor-loading"
                   onClick={addNewCard}
-                  variant="contained" color="success" size="small"
+                  variant="contained"
+                  size="small"
                   sx={{
+                    bgcolor: (theme) => theme.palette.mode === 'dark' ? '#2563eb' : '#0078d7',
+                    color: 'white',
                     boxShadow: 'none',
-                    border: '0.5px solid',
-                    borderColor: (theme) => theme.palette.success.main,
-                    '&:hover': { bgcolor: (theme) => theme.palette.success.main }
+                    textTransform: 'none',
+                    '&:hover': { 
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1d4ed8' : '#0063b1',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }
                   }}
-                >Add</Button>
+                >
+                  Add card
+                </Button>
                 <CloseIcon
                   fontSize="small"
                   sx={{
-                    color: (theme) => theme.palette.warning.light,
-                    cursor: 'pointer'
+                    color: 'text.secondary',
+                    cursor: 'pointer',
+                    p: 0.5,
+                    borderRadius: '50%',
+                    '&:hover': { 
+                      color: 'error.light',
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
+                    }
                   }}
                   onClick={toggleOpenNewCardForm}
                 />

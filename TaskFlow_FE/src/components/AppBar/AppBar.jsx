@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
 import ModeSelect from '~/components/ModeSelect/ModeSelect'
 import AppsIcon from '@mui/icons-material/Apps'
-import { ReactComponent as TrelloIcon } from '~/assets/trello.svg'
+import AssignmentIcon from '@mui/icons-material/Assignment'
 import SvgIcon from '@mui/material/SvgIcon'
 import Typography from '@mui/material/Typography'
 import Workspaces from './Menus/Workspaces'
@@ -28,7 +28,12 @@ function AppBar() {
       gap: 2,
       paddingX: 2,
       overflowX: 'auto',
-      bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#2c3e50' : '#1565c0')
+      background: (theme) => (
+        theme.palette.mode === 'dark' 
+          ? 'linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)' 
+          : 'linear-gradient(90deg, #0062ff 0%, #00a2ff 100%)'
+      ),
+      boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Link to="/boards">
@@ -39,8 +44,14 @@ function AppBar() {
 
         <Link to="/">
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <SvgIcon component={TrelloIcon} fontSize="small" inheritViewBox sx={{ color: 'white' }} />
-            <Typography variant="span" sx={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>Trello</Typography>
+            <AssignmentIcon sx={{ color: 'white' }} />
+            <Typography variant="span" sx={{ 
+              fontSize: '1.2rem', 
+              fontWeight: 'bold', 
+              color: 'white',
+              fontFamily: 'Poppins, sans-serif',
+              letterSpacing: '0.5px'
+            }}>TaskFlow</Typography>
           </Box>
         </Link>
 
@@ -53,7 +64,13 @@ function AppBar() {
             sx={{
               color: 'white',
               border: 'none',
-              '&:hover': { border: 'none' }
+              background: 'rgba(255,255,255,0.1)',
+              '&:hover': { 
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none' 
+              },
+              borderRadius: '4px',
+              transition: 'all 0.2s ease'
             }}
             variant="outlined"
             startIcon={<LibraryAddIcon />}

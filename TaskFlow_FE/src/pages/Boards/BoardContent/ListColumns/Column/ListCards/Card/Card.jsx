@@ -7,6 +7,8 @@ import CommentIcon from '@mui/icons-material/Comment'
 import AttachmentIcon from '@mui/icons-material/Attachment'
 import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
+import Chip from '@mui/material/Chip'
+import Box from '@mui/material/Box'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -21,9 +23,6 @@ function Card({ card }) {
     data: { ...card }
   })
   const dndKitCardStyles = {
-    // touchAction: 'none', // Dành cho sensor default dạng PointerSensor
-    // Nếu sử dụng CSS.Transform như docs sẽ lỗi kiểu stretch
-    // https://github.com/clauderic/dnd-kit/issues/117
     transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : undefined,
@@ -35,10 +34,13 @@ function Card({ card }) {
   }
 
   const setActiveCard = () => {
-    // Cập nhật data cho cái activeCard trong Redux
     dispatch(updateCurrentActiveCard(card))
-    // Hiện Modal ActiveCard lên
     dispatch(showModalActiveCard())
+  }
+
+  // Function to determine if we should show card labels
+  const shouldShowCardLabels = () => {
+    return card?.labels && card.labels.length > 0
   }
 
   return (
@@ -47,29 +49,114 @@ function Card({ card }) {
       ref={setNodeRef} style={dndKitCardStyles} {...attributes} {...listeners}
       sx={{
         cursor: 'pointer',
-        boxShadow: '0 1px 1px rgba(0, 0, 0, 0.2)',
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.15)',
         overflow: 'unset',
         display: card?.FE_PlaceholderCard ? 'none' : 'block',
         border: '1px solid transparent',
-        '&:hover': { borderColor: (theme) => theme.palette.primary.main }
-        // overflow: card?.FE_PlaceholderCard ? 'hidden' : 'unset',
-        // height: card?.FE_PlaceholderCard ? '0px' : 'unset'
+        borderRadius: '6px',
+        '&:hover': { 
+          borderColor: (theme) => theme.palette.primary.main,
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+        },
+        transition: 'all 0.2s ease',
+        mb: 1.5
       }}
     >
-      {card?.cover && <CardMedia sx={{ height: 140 }} image={card?.cover} /> }
+      {shouldShowCardLabels() && (
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 0.5, 
+          flexWrap: 'wrap',
+          pt: 1,
+          px: 1
+        }}>
+          {card.labels.map((label, index) => (
+            <Chip
+              key={index}
+              size="small"
+              label={label.name}
+              sx={{ 
+                height: '6px',
+                width: '40px',
+                bgcolor: label.color || 'primary.main',
+                borderRadius: '4px',
+                '.MuiChip-label': { display: 'none' }
+              }}
+            />
+          ))}
+        </Box>
+      )}
+      
+      {card?.cover && (
+        <CardMedia 
+          sx={{ 
+            height: 140,
+            borderRadius: '4px',
+            mt: 1,
+            mx: 1,
+            width: 'calc(100% - 16px)'
+          }} 
+          image={card?.cover} 
+        /> 
+      )}
+      
       <CardContent sx={{ p: 1.5, '&:last-child': { p: 1.5 } }}>
-        <Typography>{card?.title}</Typography>
+        <Typography sx={{ 
+          fontSize: '0.9rem',
+          fontWeight: 500,
+          lineHeight: 1.5,
+          wordBreak: 'break-word',
+          fontFamily: 'Roboto, sans-serif',
+          letterSpacing: '0.01em',
+          color: (theme) => theme.palette.mode === 'dark' ? '#f8f9fa' : '#2d3436'
+        }}>
+          {card?.title}
+        </Typography>
       </CardContent>
+      
       {shouldShowCardActions() &&
-        <CardActions sx={{ p: '0 4px 8px 4px' }}>
+        <CardActions sx={{ p: '0 8px 8px 8px', justifyContent: 'flex-start' }}>
           {!!card?.memberIds?.length &&
-            <Button size="small" startIcon={<GroupIcon />}>{card?.memberIds?.length}</Button>
+            <Button 
+              size="small" 
+              startIcon={<GroupIcon sx={{ fontSize: '0.9rem' }} />}
+              sx={{ 
+                fontSize: '0.75rem', 
+                p: '2px 6px',
+                minWidth: 'auto',
+                color: 'text.secondary'
+              }}
+            >
+              {card?.memberIds?.length}
+            </Button>
           }
           {!!card?.comments?.length &&
-            <Button size="small" startIcon={<CommentIcon />}>{card?.comments?.length}</Button>
+            <Button 
+              size="small" 
+              startIcon={<CommentIcon sx={{ fontSize: '0.9rem' }} />}
+              sx={{ 
+                fontSize: '0.75rem', 
+                p: '2px 6px',
+                minWidth: 'auto',
+                color: 'text.secondary'
+              }}
+            >
+              {card?.comments?.length}
+            </Button>
           }
           {!!card?.attachments?.length &&
-            <Button size="small" startIcon={<AttachmentIcon />}>{card?.attachments?.length}</Button>
+            <Button 
+              size="small" 
+              startIcon={<AttachmentIcon sx={{ fontSize: '0.9rem' }} />}
+              sx={{ 
+                fontSize: '0.75rem', 
+                p: '2px 6px',
+                minWidth: 'auto',
+                color: 'text.secondary'
+              }}
+            >
+              {card?.attachments?.length}
+            </Button>
           }
         </CardActions>
       }

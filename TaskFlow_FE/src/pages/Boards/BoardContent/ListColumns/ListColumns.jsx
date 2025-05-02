@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { toast } from 'react-toastify'
 import Box from '@mui/material/Box'
@@ -100,12 +99,19 @@ function ListColumns({ columns }) {
         {/* Box Add new column CTA */}
         {!openNewColumnForm
           ? <Box onClick={toggleOpenNewColumnForm} sx={{
-            minWidth: '250px',
-            maxWidth: '250px',
+            minWidth: '300px',
+            maxWidth: '300px',
             mx: 2,
-            borderRadius: '6px',
+            borderRadius: '8px',
             height: 'fit-content',
-            bgcolor: '#ffffff3d'
+            bgcolor: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              bgcolor: 'rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+            }
           }}>
             <Button
               startIcon={<NoteAddIcon />}
@@ -114,23 +120,29 @@ function ListColumns({ columns }) {
                 width: '100%',
                 justifyContent: 'flex-start',
                 pl: 2.5,
-                py: 1
+                py: 1.5,
+                fontWeight: 'bold',
+                textTransform: 'none',
+                fontSize: '0.95rem'
               }}
             >
               Add new column
             </Button>
           </Box>
           : <Box sx={{
-            minWidth: '250px',
-            maxWidth: '250px',
+            minWidth: '300px',
+            maxWidth: '300px',
             mx: 2,
-            p: 1,
-            borderRadius: '6px',
+            p: 2,
+            borderRadius: '8px',
             height: 'fit-content',
-            bgcolor: '#ffffff3d',
+            bgcolor: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 1
+            gap: 1.5
           }}>
             <TextField
               label="Enter column title..."
@@ -140,12 +152,15 @@ function ListColumns({ columns }) {
               autoFocus
               value={newColumnTitle}
               onChange={(e) => setNewColumnTitle(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') addNewColumn()
+              }}
               sx={{
                 '& label': { color: 'white' },
                 '& input': { color: 'white' },
                 '& label.Mui-focused': { color: 'white' },
                 '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: 'white' },
+                  '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
                   '&:hover fieldset': { borderColor: 'white' },
                   '&.Mui-focused fieldset': { borderColor: 'white' }
                 }
@@ -155,20 +170,36 @@ function ListColumns({ columns }) {
               <Button
                 className="interceptor-loading"
                 onClick={addNewColumn}
-                variant="contained" color="success" size="small"
+                variant="contained" 
+                size="small"
                 sx={{
                   boxShadow: 'none',
-                  border: '0.5px solid',
-                  borderColor: (theme) => theme.palette.success.main,
-                  '&:hover': { bgcolor: (theme) => theme.palette.success.main }
+                  bgcolor: '#00b894',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  textTransform: 'none',
+                  px: 2,
+                  py: 1,
+                  borderRadius: '4px',
+                  '&:hover': { 
+                    bgcolor: '#00a383',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.15)'
+                  }
                 }}
-              >Add Column</Button>
+              >
+                Add Column
+              </Button>
               <CloseIcon
                 fontSize="small"
                 sx={{
                   color: 'white',
                   cursor: 'pointer',
-                  '&:hover': { color: (theme) => theme.palette.warning.light }
+                  p: 0.5,
+                  borderRadius: '50%',
+                  '&:hover': { 
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    color: (theme) => theme.palette.error.light 
+                  }
                 }}
                 onClick={toggleOpenNewColumnForm}
               />

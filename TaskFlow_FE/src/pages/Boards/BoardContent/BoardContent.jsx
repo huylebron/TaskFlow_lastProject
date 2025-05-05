@@ -305,19 +305,19 @@ function BoardContent({
     setOldColumnWhenDraggingCard(null)
   }
 
-  // *** NEW Overlay Style ***
+  // Subtle Overlay Style with Blur
   const overlayStyle = {
-    opacity: 1, // Fully opaque
-    transform: 'scale(1.05) translateY(-5px)', // Scale up and lift slightly
-    filter: 'none', // No blur
-    boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.3)', // Pronounced shadow
+    opacity: 0.95, // Mostly opaque
+    transform: 'scale(1.02) rotate(2deg) translateY(-4px)', // Slight scale, tilt, and lift
+    filter: 'blur(4px)', // Apply blur
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)', // Subtle shadow
   };
 
   // Use default drop animation but apply our custom style to the overlay item
   const customDropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
       styles: {
-        active: overlayStyle // Apply the new overlay style
+        active: overlayStyle // Apply the refined overlay style
       }
     })
   }

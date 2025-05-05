@@ -27,6 +27,36 @@ import { generatePlaceholderCard } from '~/utils/formatters'
 import Column from './ListColumns/Column/Column'
 import Card from './ListColumns/Column/ListCards/Card/Card'
 
+// Define shake keyframes (can be done here or imported)
+import { keyframes } from '@mui/system';
+import GlobalStyles from '@mui/material/GlobalStyles'
+
+const shakeAnimation = keyframes`
+  0%, 100% { transform: rotate(2deg) translateX(4px); }
+  25% { transform: rotate(-1deg) translateX(-2px); } // Adjust shake intensity
+  75% { transform: rotate(4deg) translateX(6px); } // Adjust shake intensity
+`;
+
+// Define intense shake keyframes for drop
+const dropShakeAnimation = keyframes`
+  10%, 90% { transform: translate3d(-1px, 0, 0) rotate(1deg); }
+  20%, 80% { transform: translate3d(2px, 0, 0) rotate(-1deg); }
+  30%, 50%, 70% { transform: translate3d(-3px, 0, 0) rotate(1deg); }
+  40%, 60% { transform: translate3d(3px, 0, 0) rotate(-1deg); }
+  100% { transform: translate3d(0, 0, 0); } 
+`;
+
+// Define global styles for the drop shake class
+const DropShakeStyles = () => (
+  <GlobalStyles styles={{
+    '.item-dropped-shake': {
+      animation: `${dropShakeAnimation} 0.6s cubic-bezier(.36,.07,.19,.97) both`,
+      backfaceVisibility: 'hidden',
+      perspective: '1000px'
+    }
+  }} />
+);
+
 const ACTIVE_DRAG_ITEM_TYPE = {
   COLUMN: 'ACTIVE_DRAG_ITEM_TYPE_COLUMN',
   CARD: 'ACTIVE_DRAG_ITEM_TYPE_CARD'
@@ -196,6 +226,9 @@ function BoardContent({
 
     if (!active || !over) return
 
+    // Store the ID before resetting state
+    const droppedItemId = active.id;
+
     // Handle card drag end
     if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) {
       const { id: activeDraggingCardId, data: { current: activeDraggingCardData } } = active
@@ -253,6 +286,18 @@ function BoardContent({
       }
     }
 
+    // Trigger drop animation *after* potential state updates settle
+    // Use setTimeout to ensure element exists at its new position in the DOM
+    setTimeout(() => {
+      const element = document.getElementById(droppedItemId);
+      if (element) {
+        element.classList.add('item-dropped-shake');
+        setTimeout(() => {
+          element.classList.remove('item-dropped-shake');
+        }, 600); // Match animation duration
+      }
+    }, 0);
+
     // Reset all drag state
     setActiveDragItemId(null)
     setActiveDragItemType(null)
@@ -260,13 +305,19 @@ function BoardContent({
     setOldColumnWhenDraggingCard(null)
   }
 
-  // Enhanced drop animation for a smoother, more polished feel
+  // *** NEW Overlay Style ***
+  const overlayStyle = {
+    opacity: 1, // Fully opaque
+    transform: 'scale(1.05) translateY(-5px)', // Scale up and lift slightly
+    filter: 'none', // No blur
+    boxShadow: '0px 8px 20px rgba(0, 0, 0, 0.3)', // Pronounced shadow
+  };
+
+  // Use default drop animation but apply our custom style to the overlay item
   const customDropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({
-      styles: { 
-        active: { 
-          opacity: '0.5'
-        } 
+      styles: {
+        active: overlayStyle // Apply the new overlay style
       }
     })
   }
@@ -319,6 +370,7 @@ function BoardContent({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
+      <DropShakeStyles />
       <Box sx={{
         width: '100%',
         height: (theme) => theme.trello.boardContentHeight,

@@ -24,9 +24,11 @@ function Card({ card }) {
   })
   const dndKitCardStyles = {
     transform: CSS.Translate.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : undefined,
-    border: isDragging ? '1px solid #2ecc71' : undefined
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    opacity: isDragging ? 0 : 1,
+    border: isDragging ? '1px solid #2ecc71' : undefined,
+    boxShadow: undefined,
+    filter: 'none'
   }
 
   const shouldShowCardActions = () => {
@@ -45,6 +47,7 @@ function Card({ card }) {
 
   return (
     <MuiCard
+      id={card._id}
       onClick={setActiveCard}
       ref={setNodeRef} style={dndKitCardStyles} {...attributes} {...listeners}
       sx={{

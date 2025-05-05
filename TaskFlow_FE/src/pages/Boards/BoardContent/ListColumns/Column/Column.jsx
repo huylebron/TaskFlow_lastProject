@@ -40,14 +40,12 @@ function Column({ column }) {
     data: { ...column }
   })
   const dndKitColumnStyles = {
-    // touchAction: 'none', // Dành cho sensor default dạng PointerSensor
-    // Nếu sử dụng CSS.Transform như docs sẽ lỗi kiểu stretch
-    // https://github.com/clauderic/dnd-kit/issues/117
     transform: CSS.Translate.toString(transform),
-    transition,
-    // Chiều cao phải luôn max 100% vì nếu không sẽ lỗi lúc kéo column ngắn qua một cái column dài thì phải kéo ở khu vực giữa giữa rất khó chịu (demo ở video 32). Lưu ý lúc này phải kết hợp với {...listeners} nằm ở Box chứ không phải ở div ngoài cùng để tránh trường hợp kéo vào vùng xanh.
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
     height: '100%',
-    opacity: isDragging ? 0.5 : undefined
+    opacity: isDragging ? 0 : 1,
+    filter: 'none',
+    boxShadow: undefined
   }
 
   const [anchorEl, setAnchorEl] = useState(null)
@@ -154,7 +152,7 @@ function Column({ column }) {
 
   // Phải bọc div ở đây vì vấn đề chiều cao của column khi kéo thả sẽ có bug kiểu kiểu flickering (video 32)
   return (
-    <div ref={setNodeRef} style={dndKitColumnStyles} {...attributes}>
+    <div id={column._id} ref={setNodeRef} style={dndKitColumnStyles} {...attributes}>
       <Box
         {...listeners}
         sx={{

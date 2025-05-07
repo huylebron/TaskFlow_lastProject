@@ -30,6 +30,9 @@ import {
 import { useDispatch, useSelector } from 'react-redux'
 import { cloneDeep } from 'lodash'
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
+import PaletteIcon from '@mui/icons-material/Palette'
+import { updateColumnColorAPI } from '~/apis'
+import { COLUMN_COLORS } from '~/utils/constants'
 
 function Column({ column }) {
   const dispatch = useDispatch()
@@ -150,6 +153,37 @@ function Column({ column }) {
     })
   }
 
+  // Hàm xử lý khi chọn một màu mới
+  const handleSelectColor = async (newColor) => {
+    handleCloseColorMenu(); // Đóng menu chọn màu
+    handleClose(); // Đóng menu chính
+
+    if (column.color === newColor) return; // Không làm gì nếu màu không đổi
+
+    try {
+      const updatedColumnData = await updateColumnColorAPI(column._id, { color: newColor });
+
+      // Cập nhật state board trong Redux
+      const newBoard = cloneDeep(board);
+      const columnToUpdate = newBoard.columns.find(c => c._id === updatedColumnData._id);
+      if (columnToUpdate) {
+        columnToUpdate.color = updatedColumnData.color;
+        if (updatedColumnData.updatedAt) { // Cập nhật updatedAt nếu có
+          columnToUpdate.updatedAt = updatedColumnData.updatedAt;
+        }
+      }
+      dispatch(updateCurrentActiveBoard(newBoard));
+      toast.success('Column color updated!');
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to update column color');
+    }
+  };
+
+  const [anchorElColorMenu, setAnchorElColorMenu] = useState(null)
+  const openColorMenu = Boolean(anchorElColorMenu)
+  const handleClickColorMenu = (event) => setAnchorElColorMenu(event.currentTarget)
+  const handleCloseColorMenu = () => setAnchorElColorMenu(null)
+
   // Phải bọc div ở đây vì vấn đề chiều cao của column khi kéo thả sẽ có bug kiểu kiểu flickering (video 32)
   return (
     <div id={column._id} ref={setNodeRef} style={dndKitColumnStyles} {...attributes}>
@@ -158,7 +192,7 @@ function Column({ column }) {
         sx={{
           minWidth: '300px',
           maxWidth: '300px',
-          bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#383B47' : '#f0f2f5'),
+          bgcolor: column.color || ((theme) => (theme.palette.mode === 'dark' ? '#383B47' : '#f0f2f5')), // Sử dụng column.color nếu có
           ml: 2,
           borderRadius: '8px',
           height: 'fit-content',
@@ -227,13 +261,15 @@ function Column({ column }) {
               anchorEl={anchorEl}
               open={open}
               onClose={handleClose}
-              onClick={handleClose}
               MenuListProps={{
                 'aria-labelledby': 'basic-column-dropdown'
               }}
             >
               <MenuItem
-                onClick={toggleOpenNewCardForm}
+                onClick={() => {
+                  toggleOpenNewCardForm();
+                  handleClose(); // Đóng menu chính khi click
+                }}
                 sx={{
                   '&:hover': {
                     color: 'success.light',
@@ -244,21 +280,50 @@ function Column({ column }) {
                 <ListItemIcon><AddCardIcon className="add-card-icon" fontSize="small" /></ListItemIcon>
                 <ListItemText>Add new card</ListItemText>
               </MenuItem>
-              <MenuItem>
+              <MenuItem
+                onClick={(event) => {
+                  console.log('Open color menu clicked'); 
+                  handleClickColorMenu(event); // Mở menu màu, giả sử hàm này đã được định nghĩa
+                  // Không đóng menu chính ở đây
+                }}
+                sx={{
+                  '&:hover': {
+                    color: 'info.light',
+                    '& .palette-icon': { color: 'info.light' }
+                  }
+                }}
+              >
+                <ListItemIcon><PaletteIcon className="palette-icon" fontSize="small" /></ListItemIcon>
+                <ListItemText>Change Color</ListItemText>
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={() => {
+                handleClose(); // Đóng menu chính
+                // Xử lý Cut (nếu có)
+                console.log('Cut clicked');
+              }}>
                 <ListItemIcon><ContentCut fontSize="small" /></ListItemIcon>
                 <ListItemText>Cut</ListItemText>
               </MenuItem>
-              <MenuItem>
+              <MenuItem onClick={() => {
+                handleClose();
+                console.log('Copy clicked');
+              }}>
                 <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
                 <ListItemText>Copy</ListItemText>
               </MenuItem>
-              <MenuItem>
+              <MenuItem onClick={() => {
+                handleClose();
+                console.log('Paste clicked');
+              }}>
                 <ListItemIcon><ContentPaste fontSize="small" /></ListItemIcon>
                 <ListItemText>Paste</ListItemText>
               </MenuItem>
               <Divider />
               <MenuItem
-                onClick={handleDeleteColumn}
+                onClick={() => {
+                  handleDeleteColumn(); // Giả sử hàm này gọi handleClose() bên trong hoặc sau khi confirm
+                }}
                 sx={{
                   '&:hover': {
                     color: 'warning.dark',
@@ -269,10 +334,50 @@ function Column({ column }) {
                 <ListItemIcon><DeleteForeverIcon className="delete-forever-icon" fontSize="small" /></ListItemIcon>
                 <ListItemText>Delete this column</ListItemText>
               </MenuItem>
-              <MenuItem>
+              <MenuItem onClick={() => { handleClose(); console.log('Archive clicked'); }}>
                 <ListItemIcon><Cloud fontSize="small" /></ListItemIcon>
                 <ListItemText>Archive this column</ListItemText>
               </MenuItem>
+            </Menu>
+            {/* Menu chọn màu */}
+            <Menu
+              id="basic-menu-color-picker"
+              anchorEl={anchorElColorMenu}
+              open={openColorMenu}
+              onClose={handleCloseColorMenu}
+              MenuListProps={{
+                'aria-labelledby': 'basic-column-dropdown',
+                sx: {
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  maxWidth: '180px',
+                  p: 0.5
+                }
+              }}
+            >
+              {COLUMN_COLORS.map((color) => (
+                <MenuItem
+                  key={color}
+                  onClick={() => handleSelectColor(color)} // Gọi hàm xử lý chính
+                  sx={{
+                    m: 0.5,
+                    p: 0,
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '4px',
+                    minWidth: 'auto',
+                    bgcolor: color,
+                    border: column?.color === color ? '2px solid #0079bf' : '1px solid rgba(0,0,0,0.2)',
+                    '&:hover': {
+                      transform: 'scale(1.1)',
+                      border: column?.color === color ? '2px solid #00529B' : '2px solid rgba(0,0,0,0.3)',
+                    },
+                    transition: 'all 0.1s ease-in-out'
+                  }}
+                >
+                  {/* No child Box needed as bgcolor is on MenuItem itself */}
+                </MenuItem>
+              ))}
             </Menu>
           </Box>
         </Box>

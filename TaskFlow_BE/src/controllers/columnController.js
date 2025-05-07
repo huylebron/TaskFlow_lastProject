@@ -31,8 +31,19 @@ const deleteItem = async (req, res, next) => {
   } catch (error) { next(error) }
 }
 
+const updateColor = async (req, res, next) => {
+  try {
+    const columnId = req.params.id
+    // req.body sẽ chứa { color: '#RRGGBB' } hoặc tên màu từ COLUMN_COLORS
+    const updatedColumn = await columnService.updateColor(columnId, req.body)
+
+    res.status(StatusCodes.OK).json(updatedColumn)
+  } catch (error) { next(error) }
+}
+
 export const columnController = {
   createNew,
   update,
-  deleteItem
+  deleteItem,
+  updateColor
 }

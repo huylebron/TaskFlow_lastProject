@@ -36,3 +36,17 @@ export const CARD_MEMBER_ACTIONS = {
   ADD: 'ADD',
   REMOVE: 'REMOVE'
 }
+
+// Định nghĩa mảng COLUMN_COLORS chứa 10 màu được phép
+export const COLUMN_COLORS = [
+  '#FF6B6B', // Light Red
+  '#FFD166', // Light Orange
+  '#FFFF66', // Light Yellow
+  '#66FF66', // Light Green
+  '#66FFFF', // Light Cyan
+  '#6666FF', // Light Blue
+  '#FF66FF', // Light Magenta
+  '#C0C0C0', // Silver
+  '#808080', // Gray
+  '#A0522D'  // Sienna (Brownish)
+];

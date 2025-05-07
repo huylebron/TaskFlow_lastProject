@@ -7,6 +7,7 @@ import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE } from '~/utils/validators'
+import { COLUMN_COLORS } from '~/utils/constants'
 
 const createNew = async (req, res, next) => {
   const correctCondition = Joi.object({
@@ -30,7 +31,11 @@ const update = async (req, res, next) => {
     title: Joi.string().min(3).max(50).trim().strict(),
     cardOrderIds: Joi.array().items(
       Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
-    )
+    ),
+    // Thêm validation cho color
+    color: Joi.string().valid(...COLUMN_COLORS).optional().messages({
+      'any.only': '{{#label}} must be one of the allowed colors'
+    })
   })
 
   try {
@@ -59,8 +64,28 @@ const deleteItem = async (req, res, next) => {
   }
 }
 
+const updateColor = async (req, res, next) => {
+  const correctCondition = Joi.object({
+    color: Joi.string().required().valid(...COLUMN_COLORS).messages({
+      'any.required': 'Color is required.',
+      'any.only': '{{#label}} must be one of the allowed colors. Please refer to the documentation for available colors.'
+    })
+  })
+
+  try {
+    // Chỉ validate req.body vì columnId đã được route xử lý (là một ObjectId hợp lệ)
+    await correctCondition.validateAsync(req.body, { abortEarly: false })
+    next()
+  } catch (error) {
+    // Nếu có lỗi từ Joi, trả về lỗi UNPROCESSABLE_ENTITY
+    const errorMessage = new Error(error).message
+    next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, errorMessage))
+  }
+}
+
 export const columnValidation = {
   createNew,
   update,
-  deleteItem
+  deleteItem,
+  updateColor
 }

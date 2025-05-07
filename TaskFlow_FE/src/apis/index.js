@@ -45,6 +45,13 @@ export const deleteColumnDetailsAPI = async (columnId) => {
   return response.data
 }
 
+// API để cập nhật màu của Column
+export const updateColumnColorAPI = async (columnId, colorData) => {
+  // colorData dự kiến là { color: '#RRGGBB' }
+  const response = await authorizedAxiosInstance.put(`${API_ROOT}/v1/columns/${columnId}/color`, colorData)
+  return response.data
+}
+
 /** Cards */
 export const createNewCardAPI = async (newCardData) => {
   const response = await authorizedAxiosInstance.post(`${API_ROOT}/v1/cards`, newCardData)

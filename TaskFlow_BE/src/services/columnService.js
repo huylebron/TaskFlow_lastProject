@@ -64,8 +64,26 @@ const deleteItem = async (columnId) => {
   } catch (error) { throw error }
 }
 
+const updateColor = async (columnId, reqBody) => {
+  try {
+    // reqBody ở đây được mong đợi là { color: 'newColorValue' }
+    // Validation đã được thực hiện ở tầng validation, nên ở đây chỉ cần lấy color
+    const { color } = reqBody
+
+    // Gọi tới model để cập nhật cột với màu mới
+    const updatedColumn = await columnModel.update(columnId, { color: color, updatedAt: Date.now() })
+
+    if (!updatedColumn) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Column not found or color update failed.')
+    }
+
+    return updatedColumn
+  } catch (error) { throw error }
+}
+
 export const columnService = {
   createNew,
   update,
-  deleteItem
+  deleteItem,
+  updateColor
 }

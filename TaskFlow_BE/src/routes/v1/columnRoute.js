@@ -17,4 +17,8 @@ Router.route('/:id')
   .put(authMiddleware.isAuthorized, columnValidation.update, columnController.update)
   .delete(authMiddleware.isAuthorized, columnValidation.deleteItem, columnController.deleteItem)
 
+// Route mới để cập nhật màu cột
+Router.route('/:id/color')
+  .put(authMiddleware.isAuthorized, columnValidation.updateColor, columnController.updateColor)
+
 export const columnRoute = Router

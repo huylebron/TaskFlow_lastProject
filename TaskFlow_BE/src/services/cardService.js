@@ -7,6 +7,9 @@
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
+import { ObjectId } from 'mongodb'
+import ApiError from '~/utils/ApiError'
+import { StatusCodes } from 'http-status-codes'
 
 const createNew = async (reqBody) => {
   try {
@@ -60,7 +63,73 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
   } catch (error) { throw error }
 }
 
+// Thêm attachment vào card
+const addAttachment = async (cardId, attachmentFile, userInfo) => {
+  try {
+    if (!attachmentFile) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Please upload a file')
+    }
+
+    // Upload file lên Cloudinary với folder riêng cho attachments
+    const uploadResult = await CloudinaryProvider.streamUpload(attachmentFile.buffer, 'card-attachments')
+
+    // Tạo dữ liệu attachment
+    const attachmentData = {
+      fileName: attachmentFile.originalname,
+      fileUrl: uploadResult.secure_url,
+      fileSize: attachmentFile.size,
+      fileType: attachmentFile.mimetype,
+      uploadedAt: Date.now(),
+      userId: userInfo._id,
+      userEmail: userInfo.email,
+      publicId: uploadResult.public_id // Lưu public_id để tiện cho việc xóa sau này
+    }
+
+    // Thêm attachment vào card
+    const result = await cardModel.pushAttachment(cardId, attachmentData)
+    return result
+  } catch (error) { throw error }
+}
+
+// Xóa attachment từ card
+const removeAttachment = async (cardId, attachmentId) => {
+  try {
+    // Lấy thông tin card trước khi xóa để có thông tin publicId của file trên Cloudinary
+    const card = await cardModel.findOneById(cardId)
+    
+    // Tìm attachment cần xóa
+    const attachmentToRemove = card.attachments.find(att => att._id.toString() === attachmentId)
+    
+    if (!attachmentToRemove) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Attachment not found')
+    }
+
+    // Xóa file từ Cloudinary nếu có publicId
+    if (attachmentToRemove.publicId) {
+      await CloudinaryProvider.deleteResource(attachmentToRemove.publicId)
+    }
+
+    // Xóa attachment khỏi card
+    const result = await cardModel.pullAttachment(cardId, attachmentId)
+    return result
+  } catch (error) { throw error }
+}
+
+// Lấy danh sách attachments của một card
+const getAttachments = async (cardId) => {
+  try {
+    const card = await cardModel.findOneById(cardId)
+    if (!card) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found')
+    }
+    return card.attachments || []
+  } catch (error) { throw error }
+}
+
 export const cardService = {
   createNew,
-  update
+  update,
+  addAttachment,
+  removeAttachment,
+  getAttachments
 }

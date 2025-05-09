@@ -22,4 +22,26 @@ Router.route('/:id')
     cardController.update
   )
 
+// Thêm route cho các thao tác attachment
+Router.route('/:id/attachments')
+  // Lấy danh sách attachments của một card
+  .get(
+    authMiddleware.isAuthorized,
+    cardController.getAttachments
+  )
+  // Thêm attachment vào card
+  .post(
+    authMiddleware.isAuthorized,
+    multerUploadMiddleware.uploadAttachment.single('attachment'),
+    cardValidation.addAttachment,
+    cardController.addAttachment
+  )
+
+// Xóa attachment từ card
+Router.route('/:id/attachments/:attachmentId')
+  .delete(
+    authMiddleware.isAuthorized,
+    cardController.removeAttachment
+  )
+
 export const cardRoute = Router

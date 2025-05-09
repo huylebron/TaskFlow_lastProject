@@ -33,6 +33,17 @@ const CARD_COLLECTION_SCHEMA = Joi.object({
     // Chỗ này lưu ý vì dùng hàm $push để thêm comment nên không set default Date.now luôn giống hàm insertOne khi create được.
     commentedAt: Joi.date().timestamp()
   }).default([]),
+  
+  // Thêm trường attachments để lưu các file đính kèm
+  attachments: Joi.array().items({
+    fileName: Joi.string().required(),
+    fileUrl: Joi.string().required(),
+    fileSize: Joi.number().required(),
+    fileType: Joi.string().required(),
+    uploadedAt: Joi.date().timestamp(),
+    userId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+    userEmail: Joi.string().pattern(EMAIL_RULE).message(EMAIL_RULE_MESSAGE)
+  }).default([]),
 
   createdAt: Joi.date().timestamp('javascript').default(Date.now),
   updatedAt: Joi.date().timestamp('javascript').default(null),
@@ -163,6 +174,66 @@ const updateManyComments = async (userInfo) => {
   } catch (error) { throw new Error(error) }
 }
 
+/**
+* Hàm này sẽ có nhiệm vụ thêm attachment vào card
+*/
+const pushAttachment = async (cardId, attachmentData) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      { 
+        $push: { attachments: attachmentData },
+        $set: { updatedAt: Date.now() }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+/**
+* Hàm này sẽ có nhiệm vụ xóa attachment từ card
+*/
+const pullAttachment = async (cardId, attachmentId) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+      { _id: new ObjectId(cardId) },
+      { 
+        $pull: { attachments: { _id: new ObjectId(attachmentId) } },
+        $set: { updatedAt: Date.now() }
+      },
+      { returnDocument: 'after' }
+    )
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
+/**
+* Hàm này sẽ lấy tất cả attachments publicIds của một card
+* Dùng để xóa các file trên Cloudinary khi xóa card
+*/
+const getAttachmentsPublicIds = async (cardId) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOne(
+      { _id: new ObjectId(cardId) },
+      { projection: { 'attachments.publicId': 1 } }
+    )
+    return result?.attachments?.map(attachment => attachment.publicId).filter(Boolean) || []
+  } catch (error) { throw new Error(error) }
+}
+
+/**
+* Hàm này sẽ lấy tất cả card trong một column
+*/
+const findByColumnId = async (columnId) => {
+  try {
+    const result = await GET_DB().collection(CARD_COLLECTION_NAME).find(
+      { columnId: new ObjectId(columnId) }
+    ).toArray()
+    return result
+  } catch (error) { throw new Error(error) }
+}
+
 export const cardModel = {
   CARD_COLLECTION_NAME,
   CARD_COLLECTION_SCHEMA,
@@ -172,5 +243,9 @@ export const cardModel = {
   deleteManyByColumnId,
   unshiftNewComment,
   updateMembers,
-  updateManyComments
+  updateManyComments,
+  pushAttachment,
+  pullAttachment,
+  getAttachmentsPublicIds,
+  findByColumnId
 }

@@ -43,7 +43,19 @@ const update = async (req, res, next) => {
   }
 }
 
+// Thêm validation cho việc thêm attachment vào card
+const addAttachment = async (req, res, next) => {
+  // Kiểm tra xem file đã được upload hay chưa
+  if (!req.file) {
+    return next(new ApiError(StatusCodes.BAD_REQUEST, 'Please upload a file'))
+  }
+  
+  // Nếu đã có file được upload qua middleware, thì tiếp tục
+  next()
+}
+
 export const cardValidation = {
   createNew,
-  update
+  update,
+  addAttachment
 }

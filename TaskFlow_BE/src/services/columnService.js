@@ -9,6 +9,7 @@ import { boardModel } from '~/models/boardModel'
 import { cardModel } from '~/models/cardModel'
 import { StatusCodes } from 'http-status-codes'
 import ApiError from '~/utils/ApiError'
+import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
 
 const createNew = async (reqBody) => {
   try {
@@ -49,6 +50,19 @@ const deleteItem = async (columnId) => {
 
     if (!targetColumn) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Column not found!')
+    }
+
+    // Lấy danh sách tất cả các card trong column
+    const cards = await cardModel.findByColumnId(columnId)
+
+    // Xóa tất cả các attachments trên Cloudinary
+    for (const card of cards) {
+      const publicIds = await cardModel.getAttachmentsPublicIds(card._id.toString())
+      for (const publicId of publicIds) {
+        if (publicId) {
+          await CloudinaryProvider.deleteResource(publicId)
+        }
+      }
     }
 
     // Xóa Column

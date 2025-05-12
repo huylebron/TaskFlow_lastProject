@@ -9,6 +9,9 @@ import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import Chip from '@mui/material/Chip'
 import Box from '@mui/material/Box'
+import Avatar from '@mui/material/Avatar'
+import AvatarGroup from '@mui/material/AvatarGroup'
+import Tooltip from '@mui/material/Tooltip'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -32,7 +35,7 @@ function Card({ card }) {
   }
 
   const shouldShowCardActions = () => {
-    return !!card?.memberIds?.length || !!card?.comments?.length || !!card?.attachments?.length
+    return !!card?.members?.length || !!card?.comments?.length || !!card?.attachments?.length
   }
 
   const setActiveCard = () => {
@@ -118,48 +121,67 @@ function Card({ card }) {
       </CardContent>
       
       {shouldShowCardActions() &&
-        <CardActions sx={{ p: '0 8px 8px 8px', justifyContent: 'flex-start' }}>
-          {!!card?.memberIds?.length &&
-            <Button 
-              size="small" 
-              startIcon={<GroupIcon sx={{ fontSize: '0.9rem' }} />}
-              sx={{ 
-                fontSize: '0.75rem', 
-                p: '2px 6px',
-                minWidth: 'auto',
-                color: 'text.secondary'
-              }}
-            >
-              {card?.memberIds?.length}
-            </Button>
-          }
-          {!!card?.comments?.length &&
-            <Button 
-              size="small" 
-              startIcon={<CommentIcon sx={{ fontSize: '0.9rem' }} />}
-              sx={{ 
-                fontSize: '0.75rem', 
-                p: '2px 6px',
-                minWidth: 'auto',
-                color: 'text.secondary'
-              }}
-            >
-              {card?.comments?.length}
-            </Button>
-          }
-          {!!card?.attachments?.length &&
-            <Button 
-              size="small" 
-              startIcon={<AttachmentIcon sx={{ fontSize: '0.9rem' }} />}
-              sx={{ 
-                fontSize: '0.75rem', 
-                p: '2px 6px',
-                minWidth: 'auto',
-                color: 'text.secondary'
-              }}
-            >
-              {card?.attachments?.length}
-            </Button>
+        <CardActions sx={{ p: '0 8px 8px 8px', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {!!card?.comments?.length &&
+              <Tooltip title="Comments">
+                <Button 
+                  size="small" 
+                  startIcon={<CommentIcon sx={{ fontSize: '0.9rem' }} />}
+                  sx={{ 
+                    fontSize: '0.75rem', 
+                    p: '2px 6px',
+                    minWidth: 'auto',
+                    color: 'text.secondary'
+                  }}
+                >
+                  {card?.comments?.length}
+                </Button>
+              </Tooltip>
+            }
+            {!!card?.attachments?.length &&
+              <Tooltip title="Attachments">
+                <Button 
+                  size="small" 
+                  startIcon={<AttachmentIcon sx={{ fontSize: '0.9rem' }} />}
+                  sx={{ 
+                    fontSize: '0.75rem', 
+                    p: '2px 6px',
+                    minWidth: 'auto',
+                    color: 'text.secondary'
+                  }}
+                >
+                  {card?.attachments?.length}
+                </Button>
+              </Tooltip>
+            }
+          </Box>
+          
+          {!!card?.members?.length &&
+            <Tooltip title="Members">
+              <AvatarGroup 
+                max={4} 
+                sx={{
+                  gap: '6px',
+                  '& .MuiAvatar-root': {
+                    width: 24,
+                    height: 24,
+                    fontSize: '0.8rem',
+                    border: 'none'
+                  },
+                  justifyContent: 'flex-end'
+                }}
+              >
+                {card.members.map(member => (
+                  <Avatar 
+                    key={member._id} 
+                    alt={member.displayName}
+                    src={member.avatar}
+                    sx={{ width: 24, height: 24 }}
+                  />
+                ))}
+              </AvatarGroup>
+            </Tooltip>
           }
         </CardActions>
       }

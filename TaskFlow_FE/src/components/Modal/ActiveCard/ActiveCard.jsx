@@ -23,6 +23,7 @@ import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined'
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
 import SubjectRoundedIcon from '@mui/icons-material/SubjectRounded'
 import DvrOutlinedIcon from '@mui/icons-material/DvrOutlined'
+import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
 
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 import VisuallyHiddenInput from '~/components/Form/VisuallyHiddenInput'
@@ -39,11 +40,12 @@ import {
   selectIsShowModalActiveCard
 } from '~/redux/activeCard/activeCardSlice'
 import { updateCardDetailsAPI } from '~/apis'
-import { updateCardInBoard } from '~/redux/activeBoard/activeBoardSlice'
+import { updateCardInBoard, selectCurrentActiveBoard } from '~/redux/activeBoard/activeBoardSlice'
 import { selectCurrentUser } from '~/redux/user/userSlice'
 import { CARD_MEMBER_ACTIONS } from '~/utils/constants'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import MemberManagement from './MemberManagement'
+import { useState } from 'react'
 
 import { styled } from '@mui/material/styles'
 const SidebarItem = styled(Box)(({ theme }) => ({
@@ -72,27 +74,30 @@ const SidebarItem = styled(Box)(({ theme }) => ({
 function ActiveCard() {
   const dispatch = useDispatch()
   const activeCard = useSelector(selectCurrentActiveCard)
+  const activeBoard = useSelector(selectCurrentActiveBoard)
   const isShowModalActiveCard = useSelector(selectIsShowModalActiveCard)
   const currentUser = useSelector(selectCurrentUser)
 
-  // Không dùng biến State để check đóng mở Modal nữa vì chúng ta sẽ check theo cái biến isShowModalActiveCard trong redux
-  // const [isOpen, setIsOpen] = useState(true)
-  // const handleOpenModal = () => setIsOpen(true)
+  const [memberAnchorEl, setMemberAnchorEl] = useState(null)
+
+  const handleOpenMemberPopover = (event) => {
+    setMemberAnchorEl(event.currentTarget)
+  }
+
+  const handleCloseMemberPopover = () => {
+    setMemberAnchorEl(null)
+  }
+
+  const openMemberPopover = Boolean(memberAnchorEl)
+
   const handleCloseModal = () => {
-    // setIsOpen(false)
     dispatch(clearAndHideCurrentActiveCard())
   }
 
-  // Func gọi API dùng chung cho các trường hợp update card title, description, cover, comment...vv
   const callApiUpdateCard = async (updateData) => {
     const updatedCard = await updateCardDetailsAPI(activeCard._id, updateData)
-
-    // B1: Cập nhật lại cái card đang active trong modal hiện tại
     dispatch(updateCurrentActiveCard(updatedCard))
-
-    // B2: Cập nhật lại cái bản ghi card trong cái activeBoard (nested data)
     dispatch(updateCardInBoard(updatedCard))
-
     return updatedCard
   }
 
@@ -105,7 +110,6 @@ function ActiveCard() {
   }
 
   const onUploadCardCover = (event) => {
-    // console.log(event.target?.files[0])
     const error = singleFileValidator(event.target?.files[0])
     if (error) {
       toast.error(error)
@@ -113,28 +117,41 @@ function ActiveCard() {
     }
     let reqData = new FormData()
     reqData.append('cardCover', event.target?.files[0])
-
-    // Gọi API...
     toast.promise(
       callApiUpdateCard(reqData).finally(() => event.target.value = ''),
-      { pending: 'Updating...' }
+      { pending: 'Updating cover...' }
     )
   }
 
-  // Dùng async await ở đây để component con CardActivitySection chờ và nếu thành công thì mới clear thẻ input comment
   const onAddCardComment = async (commentToAdd) => {
     await callApiUpdateCard({ commentToAdd })
   }
 
-  const onUpdateCardMembers = (incomingMemberInfo) => {
-    callApiUpdateCard({ incomingMemberInfo })
+  const handleMemberUpdate = async (userId, action) => {
+    const actionText = action === CARD_MEMBER_ACTIONS.ADD ? 'Adding member...' : 'Removing member...'
+    const successText = action === CARD_MEMBER_ACTIONS.ADD ? 'Member added!' : 'Member removed!'
+    
+    toast.promise(
+      callApiUpdateCard({ incomingMemberInfo: { userId, action } }),
+      {
+        pending: actionText,
+        success: successText,
+        error: 'Failed to update members!'
+      }
+    )
+    if (action === CARD_MEMBER_ACTIONS.ADD) {
+      // Có thể không cần đóng popover khi thêm, để user thêm nhiều người
+    } else {
+      // Đóng popover khi xóa member từ MemberManagement (nếu cần)
+      // handleCloseMemberPopover() // Tùy theo UX mong muốn
+    }
   }
 
   return (
     <Modal
       disableScrollLock
       open={isShowModalActiveCard}
-      onClose={handleCloseModal} // Sử dụng onClose trong trường hợp muốn đóng Modal bằng nút ESC hoặc click ra ngoài Modal
+      onClose={handleCloseModal}
       sx={{ overflowY: 'auto' }}>
       <Box sx={{
         position: 'relative',
@@ -171,7 +188,6 @@ function ActiveCard() {
         <Box sx={{ mb: 1, mt: -3, pr: 2.5, display: 'flex', alignItems: 'center', gap: 1 }}>
           <CreditCardIcon />
 
-          {/* Feature 01: Xử lý tiêu đề của Card */}
           <ToggleFocusInput
             inputFontSize='22px'
             value={activeCard?.title}
@@ -179,16 +195,11 @@ function ActiveCard() {
         </Box>
 
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          {/* Left side */}
           <Grid xs={12} sm={9}>
             <Box sx={{ mb: 3 }}>
               <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Members</Typography>
 
-              {/* Feature 02: Xử lý các thành viên của Card */}
-              <CardUserGroup
-                cardMemberIds={activeCard?.memberIds}
-                onUpdateCardMembers={onUpdateCardMembers}
-              />
+              <CardUserGroup members={activeCard?.members} />
             </Box>
 
             <Box sx={{ mb: 3 }}>
@@ -197,7 +208,6 @@ function ActiveCard() {
                 <Typography variant="span" sx={{ fontWeight: '600', fontSize: '20px' }}>Description</Typography>
               </Box>
 
-              {/* Feature 03: Xử lý mô tả của Card */}
               <CardDescriptionMdEditor
                 cardDescriptionProp={activeCard?.description}
                 handleUpdateCardDescription={onUpdateCardDescription}
@@ -210,7 +220,6 @@ function ActiveCard() {
                 <Typography variant="span" sx={{ fontWeight: '600', fontSize: '20px' }}>Activity</Typography>
               </Box>
 
-              {/* Feature 04: Xử lý các hành động, ví dụ comment vào Card */}
               <CardActivitySection
                 cardComments={activeCard?.comments}
                 onAddCardComment={onAddCardComment}
@@ -218,51 +227,49 @@ function ActiveCard() {
             </Box>
           </Grid>
 
-          {/* Right side */}
           <Grid xs={12} sm={3}>
             <Typography sx={{ fontWeight: '600', color: 'primary.main', mb: 1 }}>Add To Card</Typography>
             <Stack direction="column" spacing={1}>
-              {/* Feature 05: Xử lý hành động bản thân user tự join vào card */}
-              {/* Nếu user hiện tại đang đăng nhập chưa thuộc mảng memberIds của card thì mới cho hiện nút Join và ngược lại */}
-              {activeCard?.memberIds?.includes(currentUser._id)
+              <SidebarItem onClick={handleOpenMemberPopover}>
+                <PeopleAltOutlinedIcon fontSize="small" />
+                Members
+              </SidebarItem>
+              <MemberManagement
+                anchorEl={memberAnchorEl}
+                open={openMemberPopover}
+                onClose={handleCloseMemberPopover}
+                cardMembers={activeCard?.members || []}
+                boardUsers={activeBoard?.FE_allUsers || []}
+                onAddMember={(userId) => handleMemberUpdate(userId, CARD_MEMBER_ACTIONS.ADD)}
+                onRemoveMember={(userId) => handleMemberUpdate(userId, CARD_MEMBER_ACTIONS.REMOVE)}
+              />
+
+              {activeCard?.members?.some(member => member._id === currentUser._id)
                 ? <SidebarItem
-                  sx={{ color: 'error.light', '&:hover': { color: 'error.light' } }}
-                  onClick={() => onUpdateCardMembers({
-                    userId: currentUser._id,
-                    action: CARD_MEMBER_ACTIONS.REMOVE
-                  })}
+                  sx={{ color: 'error.light', '&:hover': { color: 'error.main' } }}
+                  onClick={() => handleMemberUpdate(currentUser._id, CARD_MEMBER_ACTIONS.REMOVE)}
                 >
                   <ExitToAppIcon fontSize="small" />
-                  Leave
+                  Leave Card
                 </SidebarItem>
                 : <SidebarItem
                   className="active"
-                  onClick={() => onUpdateCardMembers({
-                    userId: currentUser._id,
-                    action: CARD_MEMBER_ACTIONS.ADD
-                  })}
+                  onClick={() => handleMemberUpdate(currentUser._id, CARD_MEMBER_ACTIONS.ADD)}
                 >
                   <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <PersonOutlineOutlinedIcon fontSize="small" />
-                      <span>Join</span>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <CheckCircleIcon fontSize="small" sx={{ color: '#27ae60' }} />
+                      <span>Join Card</span>
                     </Box>
                   </Box>
                 </SidebarItem>
               }
 
-              {/* Feature 06: Xử lý hành động cập nhật ảnh Cover của Card */}
               <SidebarItem className="active" component="label">
                 <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ImageOutlinedIcon fontSize="small" />
                     <span>Cover</span>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CheckCircleIcon fontSize="small" sx={{ color: '#27ae60' }} />
                   </Box>
                 </Box>
                 <VisuallyHiddenInput type="file" onChange={onUploadCardCover} />

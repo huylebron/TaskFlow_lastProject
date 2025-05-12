@@ -7,6 +7,11 @@
 import { cardModel } from '~/models/cardModel'
 import { columnModel } from '~/models/columnModel'
 import { CloudinaryProvider } from '~/providers/CloudinaryProvider'
+import { userModel } from '~/models/userModel'
+import { boardModel } from '~/models/boardModel'
+import ApiError from '~/utils/ApiError'
+import { StatusCodes } from 'http-status-codes'
+import { CARD_MEMBER_ACTIONS } from '~/utils/constants'
 
 const createNew = async (reqBody) => {
   try {
@@ -33,30 +38,70 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
       updatedAt: Date.now()
     }
 
-    let updatedCard = {}
-
     if (cardCoverFile) {
       const uploadResult = await CloudinaryProvider.streamUpload(cardCoverFile.buffer, 'card-covers')
-      updatedCard = await cardModel.update(cardId, { cover: uploadResult.secure_url })
+      await cardModel.update(cardId, { cover: uploadResult.secure_url })
     } else if (updateData.commentToAdd) {
-      // Tạo dữ liệu comment để thêm vào Database, cần bổ sung thêm những field cần thiết
       const commentData = {
         ...updateData.commentToAdd,
         commentedAt: Date.now(),
         userId: userInfo._id,
-        userEmail: userInfo.email
+        userEmail: userInfo.email,
+        userAvatar: userInfo.avatar || null,
+        userDisplayName: userInfo.displayName || userInfo.username
       }
-      updatedCard = await cardModel.unshiftNewComment(cardId, commentData)
+      await cardModel.unshiftNewComment(cardId, commentData)
     } else if (updateData.incomingMemberInfo) {
-      // Trường hợp ADD hoặc REMOVE thành viên ra khỏi Card
-      updatedCard = await cardModel.updateMembers(cardId, updateData.incomingMemberInfo)
+      const { userId: userIdToUpdate, action } = updateData.incomingMemberInfo
+
+      const currentCard = await cardModel.findOneById(cardId)
+      if (!currentCard) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'Card not found!')
+      }
+
+      const boardContainingCard = await boardModel.findOneById(currentCard.boardId)
+      if (!boardContainingCard) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found!')
+      }
+
+      const userToUpdateInfo = await userModel.findOneById(userIdToUpdate)
+      if (!userToUpdateInfo) {
+        throw new ApiError(StatusCodes.NOT_FOUND, 'User to update not found!')
+      }
+
+      const isUserInBoard = boardContainingCard.ownerIds.map(id => id.toString()).includes(userToUpdateInfo._id.toString()) ||
+                            boardContainingCard.memberIds.map(id => id.toString()).includes(userToUpdateInfo._id.toString())
+      if (!isUserInBoard) {
+        throw new ApiError(StatusCodes.FORBIDDEN, 'User is not a member or owner of this board.')
+      }
+
+      const isUserAlreadyMemberOfCard = currentCard.memberIds.map(id => id.toString()).includes(userToUpdateInfo._id.toString())
+
+      if (action === CARD_MEMBER_ACTIONS.ADD) {
+        if (isUserAlreadyMemberOfCard) {
+          throw new ApiError(StatusCodes.CONFLICT, 'User is already a member of this card.')
+        }
+        await cardModel.updateMembers(cardId, { userId: userIdToUpdate, action: CARD_MEMBER_ACTIONS.ADD })
+      } else if (action === CARD_MEMBER_ACTIONS.REMOVE) {
+        if (!isUserAlreadyMemberOfCard) {
+          throw new ApiError(StatusCodes.BAD_REQUEST, 'User is not a member of this card, cannot remove.')
+        }
+        await cardModel.updateMembers(cardId, { userId: userIdToUpdate, action: CARD_MEMBER_ACTIONS.REMOVE })
+      } else {
+        throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid member action.')
+      }
+
     } else {
-      // Các trường hợp update chung như title, description
-      updatedCard = await cardModel.update(cardId, updateData)
+      const fieldsToUpdate = { ...updateData }
+      delete fieldsToUpdate.updatedAt
+      if (Object.keys(fieldsToUpdate).length > 0) {
+        await cardModel.update(cardId, updateData)
+      }
     }
 
+    const finalUpdatedCard = await cardModel.getCardDetails(cardId)
+    return finalUpdatedCard
 
-    return updatedCard
   } catch (error) { throw error }
 }
 

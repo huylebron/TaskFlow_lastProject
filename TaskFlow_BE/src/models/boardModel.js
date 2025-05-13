@@ -104,24 +104,50 @@ const getDetails = async (userId, boardId) => {
         as: 'cards'
       } },
 
-      // Giai đoạn $addFields để xử lý populate members cho cards trước khi lookup owners và members của board
+      // BƯỚC 1: Lookup TẤT CẢ users liên quan (board owners/members và card members) vào trường tạm
+      { $lookup: {
+        from: userModel.USER_COLLECTION_NAME,
+        let: {
+          allUserIds: {
+            $setUnion: [ // Sử dụng $setUnion để loại bỏ trùng lặp ID và đảm bảo là mảng
+              { $ifNull: ['$ownerIds', []] },
+              { $ifNull: ['$memberIds', []] },
+              { $ifNull: [
+                  { $reduce: {
+                      input: '$cards.memberIds',
+                      initialValue: [],
+                      in: { $setUnion: ['$$value', { $ifNull: ['$$this', []] }] }
+                    }
+                  },
+                  []
+                ]
+              }
+            ]
+          }
+        },
+        pipeline: [
+          { $match: { $expr: { $in: [ '$_id', '$$allUserIds' ] } } },
+          { $project: { 'password': 0, 'verifyToken': 0 } }
+        ],
+        as: '__TEMP_AllUsersData__' // Đổi tên trường tạm cho rõ ràng
+      } },
+
+      // BƯỚC 2: Populate members cho cards (dùng trường tạm)
       { $addFields: {
-        // Sử dụng $map để lặp qua từng card trong mảng 'cards'
         'cards': {
           $map: {
             input: '$cards',
-            as: 'card', // Biến đại diện cho mỗi card khi lặp
+            as: 'card',
             in: {
-              // Sử dụng $mergeObjects để gộp các field của card hiện tại ('$$card') với field mới 'members'
               $mergeObjects: [
                 '$$card',
                 {
-                  // Sử dụng $filter để tìm các user trong collection 'users' mà _id của họ nằm trong 'memberIds' của card
                   'members': {
                     $filter: {
-                      input: '$__TEMP_UsersDataForCardMembers__', // Dùng mảng users tạm thời đã lookup ở bước dưới
-                      as: 'user', // Biến đại diện cho mỗi user khi lặp
-                      cond: { $in: ['$$user._id', '$$card.memberIds'] } // Điều kiện: _id user phải nằm trong memberIds của card
+                      input: '$__TEMP_AllUsersData__', // Sử dụng trường tạm đã lookup
+                      as: 'user',
+                      // Đảm bảo $$card.memberIds tồn tại và là mảng trước khi dùng $in
+                      cond: { $in: ['$$user._id', { $ifNull: ['$$card.memberIds', []] }] }
                     }
                   }
                 }
@@ -131,57 +157,30 @@ const getDetails = async (userId, boardId) => {
         }
       } },
 
-      // Thêm giai đoạn $lookup để lấy tất cả dữ liệu users một lần (bao gồm cả owners, members của board và members của card)
-      // Lưu kết quả vào một trường tạm thời '__TEMP_UsersDataForCardMembers__'
-      { $lookup: {
-        from: userModel.USER_COLLECTION_NAME,
-        // Tạo một mảng chứa tất cả các user id cần lấy (ownerIds, memberIds của board và tất cả memberIds trong các card)
-        let: {
-          allUserIds: {
-            $concatArrays: [
-              '$ownerIds',
-              '$memberIds',
-              { $reduce: { // Gộp tất cả các mảng memberIds từ các card lại thành một mảng duy nhất
-                input: '$cards.memberIds',
-                initialValue: [],
-                in: { $concatArrays: ['$$value', '$$this'] }
-              }}
-            ]
-          }
-        },
-        // Thực hiện $match để lấy các user có _id nằm trong mảng allUserIds đã tạo
-        pipeline: [
-          { $match: { $expr: { $in: [ '$_id', '$$allUserIds' ] } } },
-          // Loại bỏ các trường không cần thiết
-          { $project: { 'password': 0, 'verifyToken': 0 } }
-        ],
-        as: '__TEMP_UsersDataForCardMembers__' // Lưu kết quả vào trường tạm
-      } },
-
-      // Lookup Owners (dùng lại dữ liệu từ trường tạm)
+      // BƯỚC 3: Populate owners cho board (dùng trường tạm)
       { $addFields: {
         'owners': {
           $filter: {
-            input: '$__TEMP_UsersDataForCardMembers__',
+            input: '$__TEMP_AllUsersData__',
             as: 'user',
-            cond: { $in: ['$$user._id', '$ownerIds'] }
+            cond: { $in: ['$$user._id', { $ifNull: ['$ownerIds', []] }] }
           }
         }
       } },
 
-      // Lookup Members (dùng lại dữ liệu từ trường tạm)
+      // BƯỚC 4: Populate members cho board (dùng trường tạm)
       { $addFields: {
         'members': {
           $filter: {
-            input: '$__TEMP_UsersDataForCardMembers__',
+            input: '$__TEMP_AllUsersData__',
             as: 'user',
-            cond: { $in: ['$$user._id', '$memberIds'] }
+            cond: { $in: ['$$user._id', { $ifNull: ['$memberIds', []] }] }
           }
         }
       } },
 
-      // Xóa trường tạm sau khi đã sử dụng xong
-      { $project: { '__TEMP_UsersDataForCardMembers__': 0 } }
+      // BƯỚC 5: Xóa trường tạm
+      { $project: { '__TEMP_AllUsersData__': 0 } }
 
     ]).toArray()
 

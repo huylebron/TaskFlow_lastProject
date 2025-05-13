@@ -16,7 +16,7 @@ import Tooltip from '@mui/material/Tooltip'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useDispatch } from 'react-redux'
-import { updateCurrentActiveCard, showModalActiveCard } from '~/redux/activeCard/activeCardSlice'
+import { showModalActiveCard } from '~/redux/activeCard/activeCardSlice'
 
 function Card({ card }) {
   const dispatch = useDispatch()
@@ -39,8 +39,7 @@ function Card({ card }) {
   }
 
   const setActiveCard = () => {
-    dispatch(updateCurrentActiveCard(card))
-    dispatch(showModalActiveCard())
+    dispatch(showModalActiveCard(card._id))
   }
 
   // Function to determine if we should show card labels

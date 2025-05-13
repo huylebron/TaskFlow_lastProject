@@ -42,7 +42,8 @@ import {
   clearAndHideCurrentActiveCard,
   selectCurrentActiveCard,
   updateCurrentActiveCard,
-  selectIsShowModalActiveCard
+  selectIsShowModalActiveCard,
+  selectCurrentActiveCardId
 } from '~/redux/activeCard/activeCardSlice'
 import { updateCardDetailsAPI } from '~/apis'
 import { updateCardInBoard, selectCurrentActiveBoard } from '~/redux/activeBoard/activeBoardSlice'
@@ -50,7 +51,7 @@ import { selectCurrentUser } from '~/redux/user/userSlice'
 import { CARD_MEMBER_ACTIONS } from '~/utils/constants'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import MemberManagement from './MemberManagement'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 import { styled } from '@mui/material/styles'
 const SidebarItem = styled(Box)(({ theme }) => ({
@@ -78,9 +79,9 @@ const SidebarItem = styled(Box)(({ theme }) => ({
  */
 function ActiveCard() {
   const dispatch = useDispatch()
-  const activeCard = useSelector(selectCurrentActiveCard)
   const activeBoard = useSelector(selectCurrentActiveBoard)
   const isShowModalActiveCard = useSelector(selectIsShowModalActiveCard)
+  const currentActiveCardId = useSelector(selectCurrentActiveCardId)
   const currentUser = useSelector(selectCurrentUser)
 
   const [memberAnchorEl, setMemberAnchorEl] = useState(null)
@@ -92,6 +93,17 @@ function ActiveCard() {
     '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
     '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50'
   ]
+
+  // Tìm card tương ứng trong board dựa vào Id
+  const activeCard = useMemo(() => {
+    if (!activeBoard || !currentActiveCardId) return null
+    // Tìm trong tất cả các column của board
+    for (const column of activeBoard.columns) {
+      const card = column.cards.find(c => c._id === currentActiveCardId)
+      if (card) return card
+    }
+    return null // Không tìm thấy card
+  }, [activeBoard, currentActiveCardId])
 
   // Kiểm tra nếu cover là URL ảnh hay mã màu
   const isCoverImage = () => {
@@ -136,6 +148,10 @@ function ActiveCard() {
   }
 
   const callApiUpdateCard = async (updateData) => {
+    if (!activeCard?._id) {
+      toast.error('Card not found or not active.')
+      return
+    }
     const updatedCard = await updateCardDetailsAPI(activeCard._id, updateData)
     dispatch(updateCurrentActiveCard(updatedCard))
     dispatch(updateCardInBoard(updatedCard))
@@ -207,6 +223,10 @@ function ActiveCard() {
       // Đóng popover khi xóa member từ MemberManagement (nếu cần)
       // handleCloseMemberPopover() // Tùy theo UX mong muốn
     }
+  }
+
+  if (!activeCard) {
+    return null;
   }
 
   return (

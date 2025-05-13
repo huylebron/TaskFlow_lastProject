@@ -3,7 +3,8 @@ import { createSlice } from '@reduxjs/toolkit'
 // Khởi tạo giá trị của một Slice trong redux
 const initialState = {
   currentActiveCard: null,
-  isShowModalActiveCard: false
+  isShowModalActiveCard: false,
+  currentActiveCardId: null
 }
 
 // Khởi tạo một slice trong kho lưu trữ - redux store
@@ -14,14 +15,16 @@ export const activeCardSlice = createSlice({
   reducers: {
     // Lưu ý luôn là ở đây cần cặp ngoặc nhọn cho function trong reducer cho dù code bên trong chỉ có 1 dòng, đây là rule của Redux
     // https://redux-toolkit.js.org/usage/immer-reducers#mutating-and-returning-state
-    showModalActiveCard: (state) => {
+    showModalActiveCard: (state, action) => {
       state.isShowModalActiveCard = true
+      state.currentActiveCardId = action.payload
     },
 
     // Clear data và đóng modal ActiveCard
     clearAndHideCurrentActiveCard: (state) => {
       state.currentActiveCard = null
       state.isShowModalActiveCard = false
+      state.currentActiveCardId = null
     },
 
     updateCurrentActiveCard: (state, action) => {
@@ -53,6 +56,11 @@ export const selectCurrentActiveCard = (state) => {
 
 export const selectIsShowModalActiveCard = (state) => {
   return state.activeCard.isShowModalActiveCard
+}
+
+// Selector mới để lấy currentActiveCardId
+export const selectCurrentActiveCardId = (state) => {
+  return state.activeCard.currentActiveCardId
 }
 
 // Cái file này tên là activeCardSlice NHƯNG chúng ta sẽ export một thứ tên là Reducer, mọi người lưu ý :D

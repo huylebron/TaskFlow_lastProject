@@ -48,6 +48,15 @@ function Card({ card }) {
     return card?.labels && card.labels.length > 0
   }
 
+  // Kiểm tra nếu cover là URL ảnh hay mã màu
+  const isCoverImage = () => {
+    return card?.cover && (card.cover.startsWith('http') || card.cover.startsWith('data:image'))
+  }
+
+  const isCoverColor = () => {
+    return card?.cover && card.cover.startsWith('#')
+  }
+
   return (
     <MuiCard
       id={card._id}
@@ -93,7 +102,7 @@ function Card({ card }) {
         </Box>
       )}
       
-      {card?.cover && (
+      {isCoverImage() && (
         <CardMedia 
           sx={{ 
             height: 140,
@@ -102,8 +111,21 @@ function Card({ card }) {
             mx: 1,
             width: 'calc(100% - 16px)'
           }} 
-          image={card?.cover} 
+          image={card.cover} 
         /> 
+      )}
+      
+      {isCoverColor() && (
+        <Box 
+          sx={{ 
+            height: 40,
+            borderRadius: '4px',
+            mt: 1,
+            mx: 1,
+            width: 'calc(100% - 16px)',
+            backgroundColor: card.cover
+          }} 
+        />
       )}
       
       <CardContent sx={{ p: 1.5, '&:last-child': { p: 1.5 } }}>

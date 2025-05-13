@@ -39,8 +39,12 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
     }
 
     if (cardCoverFile) {
+      // Xử lý upload file ảnh làm cover
       const uploadResult = await CloudinaryProvider.streamUpload(cardCoverFile.buffer, 'card-covers')
       await cardModel.update(cardId, { cover: uploadResult.secure_url })
+    } else if (reqBody.cover !== undefined) {
+      // Xử lý cập nhật cover là URL, mã màu hoặc null (xóa cover)
+      await cardModel.update(cardId, { cover: reqBody.cover })
     } else if (updateData.commentToAdd) {
       const commentData = {
         ...updateData.commentToAdd,
@@ -90,8 +94,8 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
       } else {
         throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid member action.')
       }
-
     } else {
+      // Xử lý các trường dữ liệu khác
       const fieldsToUpdate = { ...updateData }
       delete fieldsToUpdate.updatedAt
       if (Object.keys(fieldsToUpdate).length > 0) {

@@ -3,6 +3,8 @@ import Modal from '@mui/material/Modal'
 import Typography from '@mui/material/Typography'
 import CreditCardIcon from '@mui/icons-material/CreditCard'
 import CancelIcon from '@mui/icons-material/Cancel'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
+import PaletteIcon from '@mui/icons-material/Palette'
 import Grid from '@mui/material/Unstable_Grid2'
 import Stack from '@mui/material/Stack'
 import Divider from '@mui/material/Divider'
@@ -24,6 +26,9 @@ import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined'
 import SubjectRoundedIcon from '@mui/icons-material/SubjectRounded'
 import DvrOutlinedIcon from '@mui/icons-material/DvrOutlined'
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined'
+import Popover from '@mui/material/Popover'
+import Button from '@mui/material/Button'
+import CloseIcon from '@mui/icons-material/Close'
 
 import ToggleFocusInput from '~/components/Form/ToggleFocusInput'
 import VisuallyHiddenInput from '~/components/Form/VisuallyHiddenInput'
@@ -79,6 +84,23 @@ function ActiveCard() {
   const currentUser = useSelector(selectCurrentUser)
 
   const [memberAnchorEl, setMemberAnchorEl] = useState(null)
+  const [colorAnchorEl, setColorAnchorEl] = useState(null)
+  const [coverOptionsAnchorEl, setCoverOptionsAnchorEl] = useState(null)
+
+  // 10 màu tĩnh để người dùng chọn
+  const colorOptions = [
+    '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
+    '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50'
+  ]
+
+  // Kiểm tra nếu cover là URL ảnh hay mã màu
+  const isCoverImage = () => {
+    return activeCard?.cover && (activeCard.cover.startsWith('http') || activeCard.cover.startsWith('data:image'))
+  }
+
+  const isCoverColor = () => {
+    return activeCard?.cover && activeCard.cover.startsWith('#')
+  }
 
   const handleOpenMemberPopover = (event) => {
     setMemberAnchorEl(event.currentTarget)
@@ -88,7 +110,26 @@ function ActiveCard() {
     setMemberAnchorEl(null)
   }
 
+  const handleOpenColorPopover = (event) => {
+    setColorAnchorEl(event.currentTarget)
+    setCoverOptionsAnchorEl(null)
+  }
+
+  const handleCloseColorPopover = () => {
+    setColorAnchorEl(null)
+  }
+
+  const handleOpenCoverOptions = (event) => {
+    setCoverOptionsAnchorEl(event.currentTarget)
+  }
+
+  const handleCloseCoverOptions = () => {
+    setCoverOptionsAnchorEl(null)
+  }
+
   const openMemberPopover = Boolean(memberAnchorEl)
+  const openColorPopover = Boolean(colorAnchorEl)
+  const openCoverOptionsPopover = Boolean(coverOptionsAnchorEl)
 
   const handleCloseModal = () => {
     dispatch(clearAndHideCurrentActiveCard())
@@ -121,6 +162,27 @@ function ActiveCard() {
       callApiUpdateCard(reqData).finally(() => event.target.value = ''),
       { pending: 'Updating cover...' }
     )
+  }
+
+  const onRemoveCardCover = () => {
+    toast.promise(
+      callApiUpdateCard({ cover: null }),
+      { 
+        pending: 'Removing cover...',
+        success: 'Cover removed!'
+      }
+    )
+  }
+
+  const onSelectColorCover = (color) => {
+    toast.promise(
+      callApiUpdateCard({ cover: color }),
+      { 
+        pending: 'Updating cover color...',
+        success: 'Cover color updated!'
+      }
+    )
+    handleCloseColorPopover()
   }
 
   const onAddCardComment = async (commentToAdd) => {
@@ -175,15 +237,49 @@ function ActiveCard() {
           <CancelIcon color="error" sx={{ '&:hover': { color: 'error.light' } }} onClick={handleCloseModal} />
         </Box>
 
-        {activeCard?.cover &&
-          <Box sx={{ mb: 4 }}>
-            <img
-              style={{ width: '100%', height: '320px', borderRadius: '6px', objectFit: 'cover' }}
-              src={activeCard?.cover}
-              alt="card-cover"
-            />
+        {activeCard?.cover && (
+          <Box sx={{ position: 'relative', mb: 4 }}>
+            {isCoverImage() && (
+              <img
+                style={{ width: '100%', height: '320px', borderRadius: '6px', objectFit: 'cover' }}
+                src={activeCard.cover}
+                alt="card-cover"
+              />
+            )}
+            {isCoverColor() && (
+              <Box
+                sx={{
+                  width: '100%', 
+                  height: '120px', 
+                  borderRadius: '6px',
+                  backgroundColor: activeCard.cover
+                }}
+              />
+            )}
+            <Box
+              onClick={onRemoveCardCover}
+              sx={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)'
+                }
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </Box>
           </Box>
-        }
+        )}
 
         <Box sx={{ mb: 1, mt: -3, pr: 2.5, display: 'flex', alignItems: 'center', gap: 1 }}>
           <CreditCardIcon />
@@ -265,15 +361,89 @@ function ActiveCard() {
                 </SidebarItem>
               }
 
-              <SidebarItem className="active" component="label">
+              <SidebarItem 
+                onClick={handleOpenCoverOptions}
+                className="active"
+              >
                 <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ImageOutlinedIcon fontSize="small" />
                     <span>Cover</span>
                   </Box>
                 </Box>
-                <VisuallyHiddenInput type="file" onChange={onUploadCardCover} />
               </SidebarItem>
+              
+              <Popover
+                open={openCoverOptionsPopover}
+                anchorEl={coverOptionsAnchorEl}
+                onClose={handleCloseCoverOptions}
+                anchorOrigin={{
+                  vertical: 'center',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'center',
+                  horizontal: 'left',
+                }}
+                sx={{ ml: 1 }}
+              >
+                <Box sx={{ p: 2, width: 200 }}>
+                  <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>Tùy chọn Cover</Typography>
+                  
+                  <SidebarItem 
+                    onClick={handleOpenColorPopover}
+                    sx={{ mb: 1 }}
+                  >
+                    <PaletteIcon fontSize="small" />
+                    Cover Color
+                  </SidebarItem>
+                  
+                  <SidebarItem component="label">
+                    <ImageOutlinedIcon fontSize="small" />
+                    Upload Cover
+                    <VisuallyHiddenInput type="file" onChange={onUploadCardCover} />
+                  </SidebarItem>
+                </Box>
+              </Popover>
+              
+              <Popover
+                open={openColorPopover}
+                anchorEl={colorAnchorEl}
+                onClose={handleCloseColorPopover}
+                anchorOrigin={{
+                  vertical: 'center',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'center',
+                  horizontal: 'left',
+                }}
+                sx={{ ml: 1 }}
+              >
+                <Box sx={{ p: 2, width: 240 }}>
+                  <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'bold' }}>Chọn màu cover</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                    {colorOptions.map((color, index) => (
+                      <Box
+                        key={index}
+                        onClick={() => onSelectColorCover(color)}
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          backgroundColor: color,
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            opacity: 0.8,
+                            transform: 'scale(1.05)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              </Popover>
 
               <SidebarItem><AttachFileOutlinedIcon fontSize="small" />Attachment</SidebarItem>
               <SidebarItem><LocalOfferOutlinedIcon fontSize="small" />Labels</SidebarItem>

@@ -29,6 +29,12 @@ const update = async (req, res, next) => {
   const correctCondition = Joi.object({
     title: Joi.string().min(3).max(50).trim().strict(),
     description: Joi.string().min(3).max(256).trim().strict(),
+    // Thêm validation cho cover: chấp nhận URL, mã màu hex hoặc null
+    cover: Joi.alternatives().try(
+      Joi.string().uri(), // URL hợp lệ
+      Joi.string().pattern(/^#([a-fA-F0-9]{6})$/).message('Cover color must be a valid hex color code (e.g. #ffffff)'),
+      Joi.allow(null)
+    ),
     // Validation cho commentToAdd
     commentToAdd: Joi.object({
       content: Joi.string().required().min(1).trim().strict()

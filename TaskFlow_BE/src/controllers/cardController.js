@@ -18,6 +18,8 @@ const update = async (req, res, next) => {
     const cardId = req.params.id
     const cardCoverFile = req.file
     const userInfo = req.jwtDecoded
+    
+    // Chuyển tiếp tất cả dữ liệu từ req.body, bao gồm cả thông tin cover nếu có
     const updatedCard = await cardService.update(cardId, req.body, cardCoverFile, userInfo)
 
     res.status(StatusCodes.OK).json(updatedCard)
